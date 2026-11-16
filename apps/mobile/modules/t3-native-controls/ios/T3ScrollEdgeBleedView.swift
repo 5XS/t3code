@@ -31,6 +31,7 @@ final class T3ScrollEdgeBleedView: ExpoView {
     #if canImport(UIKit, _version: 9127.0.85)
     if #available(iOS 27.1, *) {
       registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) { (view: T3ScrollEdgeBleedView, _: UITraitCollection) in
+        view.dbgLog("trait id=%p %@", view, view.edges())
         view.setNeedsLayout()
       }
     }
@@ -68,6 +69,7 @@ final class T3ScrollEdgeBleedView: ExpoView {
       content = found.subviews.first { type(of: $0) == UIView.self }
     }
     bleed = verticalBarBleed()
+    dbgLog("edges id=%p %@", self, edges())
     dbgLog("layout id=%p bleed=%@ self=%@ sv=%@ side=%@", self, NSCoder.string(for: bleed), NSCoder.string(for: frame), NSCoder.string(for: found.frame), String(describing: verticalBarSide()))
     if frameObservation == nil {
       frameObservation = found.observe(\.frame, options: [.new]) { [weak self] sv, _ in
@@ -107,6 +109,15 @@ final class T3ScrollEdgeBleedView: ExpoView {
   }
 
   private enum Side { case left, right }
+
+  func edges() -> String {
+    #if canImport(UIKit, _version: 9127.0.85)
+    if #available(iOS 27.1, *) {
+      return "self=\(traitCollection.verticalBarEdge.rawValue) root=\(window?.rootViewController?.traitCollection.verticalBarEdge.rawValue ?? -9) win=\(window?.traitCollection.verticalBarEdge.rawValue ?? -9)"
+    }
+    #endif
+    return "n/a"
+  }
 
   private func verticalBarSide() -> Side? {
     // The vertical-bar API ships in the iOS 27.1 SDK (UIKit 9127.0.85); see T3LayoutMetricsView.
