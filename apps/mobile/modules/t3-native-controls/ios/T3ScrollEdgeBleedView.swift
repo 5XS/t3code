@@ -8,6 +8,10 @@ import UIKit
 /// bar, as in Messages. Everything happens in UIKit layout, so folds move the blur and the content
 /// together.
 final class T3ScrollEdgeBleedView: ExpoView {
+  let onDebug = EventDispatcher()
+  func dbgLog(_ format: String, _ args: CVarArg...) {
+    onDebug(["msg": String(format: format, arguments: args)])
+  }
   // Fabric recycles scroll views, so everything changed here is put back before this view leaves
   // the window, which unmounting does before any recycling.
   private var scrollView: UIScrollView?
@@ -39,7 +43,7 @@ final class T3ScrollEdgeBleedView: ExpoView {
 
   override func didMoveToWindow() {
     super.didMoveToWindow()
-    NSLog("T3BLEED window id=%p attached=%d", self, window != nil ? 1 : 0)
+    dbgLog("window id=%p attached=%d", self, window != nil ? 1 : 0)
     if window == nil { detach() } else { setNeedsLayout() }
   }
 
@@ -64,12 +68,12 @@ final class T3ScrollEdgeBleedView: ExpoView {
       content = found.subviews.first { type(of: $0) == UIView.self }
     }
     bleed = verticalBarBleed()
-    NSLog("T3BLEED layout id=%p bleed=%@ self=%@ sv=%@ side=%@", self, NSCoder.string(for: bleed), NSCoder.string(for: frame), NSCoder.string(for: found.frame), String(describing: verticalBarSide()))
+    dbgLog("layout id=%p bleed=%@ self=%@ sv=%@ side=%@", self, NSCoder.string(for: bleed), NSCoder.string(for: frame), NSCoder.string(for: found.frame), String(describing: verticalBarSide()))
     if frameObservation == nil {
       frameObservation = found.observe(\.frame, options: [.new]) { [weak self] sv, _ in
         MainActor.assumeIsolated {
           guard let self else { return }
-          NSLog("T3BLEED svframe id=%p frame=%@ container=%@ bleed=%@", self, NSCoder.string(for: sv.frame), NSCoder.string(for: sv.superview?.bounds ?? .zero), NSCoder.string(for: self.bleed))
+          self.dbgLog("svframe id=%p frame=%@ container=%@ bleed=%@", self, NSCoder.string(for: sv.frame), NSCoder.string(for: sv.superview?.bounds ?? .zero), NSCoder.string(for: self.bleed))
         }
       }
     }
@@ -91,7 +95,7 @@ final class T3ScrollEdgeBleedView: ExpoView {
         let flush = side == .left
           ? abs(frame.minX - (view.bounds.minX + inset)) < 0.5
           : abs(view.bounds.maxX - inset - frame.maxX) < 0.5
-        if !flush { NSLog("T3BLEED notflush id=%p ancestor=%@ inset=%f frame=%@ ancestorBounds=%@", self, String(describing: type(of: view)), inset, NSCoder.string(for: frame), NSCoder.string(for: view.bounds)) }
+        if !flush { dbgLog("notflush id=%p ancestor=%@ inset=%f frame=%@ ancestorBounds=%@", self, String(describing: type(of: view)), inset, NSCoder.string(for: frame), NSCoder.string(for: view.bounds)) }
         guard flush else { return .zero }
         return side == .left
           ? UIEdgeInsets(top: 0, left: inset, bottom: 0, right: 0)
@@ -154,7 +158,7 @@ final class T3ScrollEdgeBleedView: ExpoView {
 
   private func detach() {
     guard scrollView != nil else { return }
-    NSLog("T3BLEED detach id=%p", self)
+    dbgLog("detach id=%p", self)
     frameObservation = nil
     bleed = .zero
     apply()

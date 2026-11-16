@@ -54,6 +54,7 @@ public final class T3NativeControlsModule: Module {
 
     View(T3ScrollEdgeBleedView.self) {
       ViewName("ScrollEdgeBleed")
+      Events("onDebug")
     }
 
     AsyncFunction("generateDpopKey") { T3DpopKeys.generate() }

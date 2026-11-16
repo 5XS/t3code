@@ -37,7 +37,16 @@ export function NativeScrollViewMarker(props: ComponentProps<typeof ScrollViewMa
       scrollEdgeEffects={props.scrollEdgeEffects ?? effects ?? DEFAULT_SCROLL_EDGE_EFFECTS}
     />
   );
-  return ScrollEdgeBleed ? <ScrollEdgeBleed style={props.style}>{marker}</ScrollEdgeBleed> : marker;
+  return ScrollEdgeBleed ? (
+    <ScrollEdgeBleed
+      style={props.style}
+      {...({ onDebug: (e: { nativeEvent: { msg: string } }) => console.log("T3BLEED " + e.nativeEvent.msg) } as object)}
+    >
+      {marker}
+    </ScrollEdgeBleed>
+  ) : (
+    marker
+  );
 }
 
 export function NativeScrollView(props: ComponentProps<typeof ScrollView>) {
