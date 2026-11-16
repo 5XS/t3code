@@ -20,6 +20,7 @@ final class T3ScrollEdgeBleedView: ExpoView {
   /// React Native's clipping, saved while bleeding. React Native only rewrites it when the
   /// `overflow` style changes, so it stays off while bleeding.
   private var containerClipped: Bool?
+  private var frameObservation: NSKeyValueObservation?
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
@@ -38,6 +39,7 @@ final class T3ScrollEdgeBleedView: ExpoView {
 
   override func didMoveToWindow() {
     super.didMoveToWindow()
+    NSLog("T3BLEED window id=%p attached=%d", self, window != nil ? 1 : 0)
     if window == nil { detach() } else { setNeedsLayout() }
   }
 
@@ -62,6 +64,15 @@ final class T3ScrollEdgeBleedView: ExpoView {
       content = found.subviews.first { type(of: $0) == UIView.self }
     }
     bleed = verticalBarBleed()
+    NSLog("T3BLEED layout id=%p bleed=%@ self=%@ sv=%@ side=%@", self, NSCoder.string(for: bleed), NSCoder.string(for: frame), NSCoder.string(for: found.frame), String(describing: verticalBarSide()))
+    if frameObservation == nil {
+      frameObservation = found.observe(\.frame, options: [.new]) { [weak self] sv, _ in
+        MainActor.assumeIsolated {
+          guard let self else { return }
+          NSLog("T3BLEED svframe id=%p frame=%@ container=%@ bleed=%@", self, NSCoder.string(for: sv.frame), NSCoder.string(for: sv.superview?.bounds ?? .zero), NSCoder.string(for: self.bleed))
+        }
+      }
+    }
     // Without the content view to shift back, bleeding left would move the rows under the bar.
     if content == nil { bleed.left = 0 }
     apply()
@@ -80,6 +91,7 @@ final class T3ScrollEdgeBleedView: ExpoView {
         let flush = side == .left
           ? abs(frame.minX - (view.bounds.minX + inset)) < 0.5
           : abs(view.bounds.maxX - inset - frame.maxX) < 0.5
+        if !flush { NSLog("T3BLEED notflush id=%p ancestor=%@ inset=%f frame=%@ ancestorBounds=%@", self, String(describing: type(of: view)), inset, NSCoder.string(for: frame), NSCoder.string(for: view.bounds)) }
         guard flush else { return .zero }
         return side == .left
           ? UIEdgeInsets(top: 0, left: inset, bottom: 0, right: 0)
@@ -142,6 +154,8 @@ final class T3ScrollEdgeBleedView: ExpoView {
 
   private func detach() {
     guard scrollView != nil else { return }
+    NSLog("T3BLEED detach id=%p", self)
+    frameObservation = nil
     bleed = .zero
     apply()
     scrollView = nil
